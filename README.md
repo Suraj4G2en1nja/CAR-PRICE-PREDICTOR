@@ -20,3 +20,7 @@ Support dealerships in inventory valuation.
 ## TECH STACK - 
 
 Python , Numpy , Pandas , Scikitlearn , Html , Css , Javascript , Flask .
+
+## DEMO - 
+
+![demo](https://github.com/user-attachments/assets/11c4b6c6-8f0b-49d7-a95e-ad9da675743f)
