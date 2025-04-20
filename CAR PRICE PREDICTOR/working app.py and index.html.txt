@@ -1,0 +1,177 @@
+from flask import Flask, render_template, request
+import pandas as pd
+import numpy as np
+import pickle
+
+app = Flask(__name__)
+
+model = pickle.load(open("LinearRegressionModel.pkl", 'rb'))
+car = pd.read_csv("cleaned car dataset.csv")
+
+@app.route('/')
+def index():
+    companies = sorted(car['company'].unique())
+    car_models = sorted(car['name'].unique())
+    years = sorted(car['year'].unique(), reverse=True)
+    fuel_type = car['fuel_type'].unique()
+    return render_template('index.html', companies=companies, car_models=car_models, years=years, fuel_type=fuel_type)
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    company = request.form.get('company')
+    car_model = request.form.get('car_model')
+    year = int(request.form.get('year'))
+    fuel_type = request.form.get('fuel_type')
+    kms_driven = int(request.form.get('kms_driven'))
+
+    prediction = model.predict(pd.DataFrame(
+        [[car_model, company, year, kms_driven, fuel_type]],
+        columns=['name', 'company', 'year', 'kms_driven', 'fuel_type']
+    ))
+
+    return str(np.round(prediction[0], 2))
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Car Price Predictor</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .form-box {
+            background-color: white;
+            padding: 20px;
+            max-width: 500px;
+            margin: auto;
+            border-radius: 10px;
+            box-shadow: 0px 0px 8px rgba(0,0,0,0.1);
+        }
+        label {
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 22px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-box">
+        <h2>Car Price Predictor</h2>
+        <form method="POST" action="/predict" id="price-form">
+            <label>Company:</label>
+            <select name="company" id="company" required>
+                {% for company in companies %}
+                    <option value="{{ company }}">{{ company }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Car Model:</label>
+            <select name="car_model" id="car_model" required>
+                {% for model in car_models %}
+                    <option value="{{ model }}">{{ model }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Year:</label>
+            <select name="year" required>
+                {% for y in years %}
+                    <option value="{{ y }}">{{ y }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Fuel Type:</label>
+            <select name="fuel_type" required>
+                {% for fuel in fuel_type %}
+                    <option value="{{ fuel }}">{{ fuel }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Kilometers Driven:</label>
+            <input type="number" name="kms_driven" required>
+
+            <button type="submit">Predict Price</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const companySelect = document.getElementById("company");
+        const carModelSelect = document.getElementById("car_model");
+
+        const allModels = [...carModelSelect.options].map(option => ({
+            value: option.value,
+            text: option.text
+        }));
+
+        companySelect.addEventListener("change", function() {
+            const selectedCompany = this.value.toLowerCase();
+            carModelSelect.innerHTML = "";
+
+            const filtered = allModels.filter(opt =>
+                opt.value.toLowerCase().startsWith(selectedCompany)
+            );
+
+            filtered.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt.value;
+                option.text = opt.text;
+                carModelSelect.appendChild(option);
+            });
+
+            if (filtered.length === 0) {
+                const option = document.createElement("option");
+                option.text = "No models available";
+                carModelSelect.appendChild(option);
+            }
+        });
+
+        // Optional: Show result without refreshing page
+        document.getElementById("price-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const res = await fetch('/predict', {
+                method: "POST",
+                body: formData
+            });
+            const result = await res.text();
+            document.getElementById("result").innerText = `Predicted Price: ₹${result} Lakhs`;
+        });
+    </script>
+</body>
+</html>

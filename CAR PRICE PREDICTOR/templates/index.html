@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Car Price Predictor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: skyblue;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: auto;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        label {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-left: 6px solid #3498db;
+            font-size: 20px;
+            color: #2c3e50;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Car Price Predictor</h2>
+        <form method="POST" action="/predict" id="carForm">
+            <label for="company">Company</label>
+            <select name="company" id="company" required>
+                {% for company in companies %}
+                    <option value="{{ company }}" {% if company == 'Select Company' %}disabled selected{% endif %}>{{ company }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="car_model">Car Model</label>
+            <select name="car_model" id="car_model" required>
+                <option selected disabled>Select Car Model</option>
+            </select>
+
+            <label for="year">Year</label>
+            <select name="year" required>
+                {% for y in years %}
+                    <option value="{{ y }}" {% if y == 'Select Year' %}disabled selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="fuel_type">Fuel Type</label>
+            <select name="fuel_type" required>
+                {% for fuel in fuel_types %}
+                    <option value="{{ fuel }}" {% if fuel == 'Select Fuel Type' %}disabled selected{% endif %}>{{ fuel }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="kms_driven">Kilometers Driven</label>
+            <input type="number" name="kms_driven" placeholder="Enter KMs driven" min="1000" max="500000" required>
+
+            <button type="submit">Predict Price</button>
+        </form>
+
+        {% if prediction %}
+            <div class="result">
+                {{ prediction }}
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById("company").addEventListener("change", function () {
+            const company = this.value;
+            fetch("/get_car_models", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: "company=" + encodeURIComponent(company)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const carModelSelect = document.getElementById("car_model");
+                carModelSelect.innerHTML = '<option selected disabled>Select Car Model</option>';
+                data.forEach(model => {
+                    carModelSelect.innerHTML += `<option value="${model}">${model}</option>`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
